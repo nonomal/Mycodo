@@ -16,8 +16,8 @@ MYCODO_MAJOR_VERSION="8"
 # Dependency versions/URLs
 PIGPIO_URL="https://github.com/joan2937/pigpio/archive/v79.tar.gz"
 MCB2835_URL="http://www.airspayce.com/mikem/bcm2835/bcm2835-1.50.tar.gz"
-WIRINGPI_URL_ARMHF="https://github.com/WiringPi/WiringPi/releases/download/2.61-1/wiringpi-2.61-1-armhf.deb"
-WIRINGPI_URL_ARM64="https://github.com/WiringPi/WiringPi/releases/download/2.61-1/wiringpi-2.61-1-arm64.deb"
+WIRINGPI_URL_ARMHF="https://github.com/WiringPi/WiringPi/releases/download/2.61-1/wiringpi-3.10-armhf.deb"
+WIRINGPI_URL_ARM64="https://github.com/WiringPi/WiringPi/releases/download/2.61-1/wiringpi-3.10-arm64.deb"
 
 INFLUXDB1_VERSION="1.8.10"
 
@@ -136,6 +136,7 @@ case "${1:-''}" in
         mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/ssl_certs
         mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/js/user_js
         mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/css/user_css
+        mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/fonts/user_fonts
 
         if [[ ! -e /var/log/mycodo/mycodo.log ]]; then
             touch /var/log/mycodo/mycodo.log
@@ -437,11 +438,12 @@ case "${1:-''}" in
         printf "\n#### Ensuring compatible version of influxdb 2.x is installed ####\n"
         if [[ ${UNAME_TYPE} == 'x86_64' || ${MACHINE_TYPE} == 'arm64' ]]; then
             INSTALL_ADDRESS="https://dl.influxdata.com/influxdb/releases/"
-            AMD64_INSTALL_FILE="influxdb2_2.7.3-1_amd64.deb"
-            ARM64_INSTALL_FILE="influxdb2_2.7.3-1_arm64.deb"
-            AMD64_CLIENT_FILE="influxdb2-client-2.7.3-amd64.deb"
-            ARM64_CLIENT_FILE="influxdb2-client-2.7.3-arm64.deb"
-            CORRECT_VERSION="2.7.3-1"
+            AMD64_INSTALL_FILE="influxdb2_2.7.8-1_amd64.deb"
+            ARM64_INSTALL_FILE="influxdb2_2.7.8-1_arm64.deb"
+            CORRECT_VERSION_INSTALL="2.7.8-1"
+            AMD64_CLIENT_FILE="influxdb2-client-2.7.5-amd64.deb"
+            ARM64_CLIENT_FILE="influxdb2-client-2.7.5-arm64.deb"
+            CORRECT_VERSION_CLI="2.7.5-1"
 
             if [[ ${UNAME_TYPE} == 'x86_64' ]]; then
                 printf "#### Detected x86_64 architecture\n"
@@ -457,8 +459,8 @@ case "${1:-''}" in
 
             CURRENT_VERSION=$(apt-cache policy influxdb2 | grep 'Installed' | gawk '{print $2}')
 
-            if [[ "${CURRENT_VERSION}" != "${CORRECT_VERSION}" ]]; then
-                printf "#### Incorrect InfluxDB version (v${CURRENT_VERSION}) installed. Should be v${CORRECT_VERSION}\n"
+            if [[ "${CURRENT_VERSION}" != "${CORRECT_VERSION_INSTALL}" ]]; then
+                printf "#### Incorrect InfluxDB version (v${CURRENT_VERSION}) installed. Should be v${CORRECT_VERSION_INSTALL}\n"
 
                 printf "#### Stopping influxdb 1.x (if installed)...\n"
                 service influxdb stop
@@ -466,7 +468,7 @@ case "${1:-''}" in
                 printf "#### Uninstalling influxdb 1.x (if installed)...\n"
                 DEBIAN_FRONTEND=noninteractive apt remove -y influxdb
 
-                printf "#### Installing InfluxDB v${CORRECT_VERSION}...\n"
+                printf "#### Installing InfluxDB v${CORRECT_VERSION_INSTALL}...\n"
 
                 wget --quiet "${INSTALL_ADDRESS}${INSTALL_FILE}"
                 dpkg -i "${INSTALL_FILE}"
@@ -474,17 +476,17 @@ case "${1:-''}" in
 
                 service influxd restart
             else
-                printf "Correct version of InfluxDB currently installed (v${CORRECT_VERSION}).\n"
+                printf "Correct version of InfluxDB currently installed (v${CORRECT_VERSION_INSTALL}).\n"
             fi
 
             printf "#### Influxdb client file location: ${INSTALL_ADDRESS}${CLIENT_FILE}\n"
 
             CURRENT_VERSION=$(apt-cache policy influxdb2-cli | grep 'Installed' | gawk '{print $2}')
 
-            if [[ "${CURRENT_VERSION}" != "${CORRECT_VERSION}" ]]; then
-                printf "#### Incorrect InfluxDB-Client version (v${CURRENT_VERSION}) installed. Should be v${CORRECT_VERSION}\n"
+            if [[ "${CURRENT_VERSION}" != "${CORRECT_VERSION_CLI}" ]]; then
+                printf "#### Incorrect InfluxDB-Client version (v${CURRENT_VERSION}) installed. Should be v${CORRECT_VERSION_CLI}\n"
 
-                printf "#### Installing InfluxDB-Client v${CORRECT_VERSION}...\n"
+                printf "#### Installing InfluxDB-Client v${CORRECT_VERSION_CLI}...\n"
 
                 wget --quiet "${INSTALL_ADDRESS}${CLIENT_FILE}"
                 dpkg -i "${CLIENT_FILE}"
@@ -492,7 +494,7 @@ case "${1:-''}" in
 
                 service influxd restart
             else
-                printf "Correct version of InfluxDB-Client currently installed (v${CORRECT_VERSION}).\n"
+                printf "Correct version of InfluxDB-Client currently installed (v${CORRECT_VERSION_CLI}).\n"
             fi
         else
             printf "ERROR: Could not detect 64-bit architecture (x86_64/arm64) to install Influxdb 2.x (found ${UNAME_TYPE}/${MACHINE_TYPE}).\n"
@@ -734,6 +736,7 @@ case "${1:-''}" in
         mkdir -p "${MYCODO_PATH}"/mycodo/scripts
         mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/js/user_js
         mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/css/user_css
+        mkdir -p "${MYCODO_PATH}"/mycodo/mycodo_flask/static/fonts/user_fonts
 
         if [[ ! -e /var/log/mycodo/mycodo.log ]]; then
             touch /var/log/mycodo/mycodo.log

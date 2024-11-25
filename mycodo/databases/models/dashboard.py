@@ -1,4 +1,6 @@
 # coding=utf-8
+from sqlalchemy.dialects.mysql import LONGTEXT
+
 from mycodo.databases import CRUDMixin
 from mycodo.databases import set_uuid
 from mycodo.mycodo_flask.extensions import db
@@ -9,7 +11,7 @@ class Dashboard(CRUDMixin, db.Model):
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    unique_id = db.Column(db.String, nullable=False, unique=True, default=set_uuid)
+    unique_id = db.Column(db.String(36), nullable=False, unique=True, default=set_uuid)
     name = db.Column(db.Text, nullable=False, unique=True)
     locked = db.Column(db.Boolean, default=False)
 
@@ -19,9 +21,9 @@ class Widget(CRUDMixin, db.Model):
     __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, unique=True, primary_key=True)
-    unique_id = db.Column(db.String, nullable=False, unique=True, default=set_uuid)
+    unique_id = db.Column(db.String(36), nullable=False, unique=True, default=set_uuid)
     graph_type = db.Column(db.Text, default=None)
-    dashboard_id = db.Column(db.String, default=None)
+    dashboard_id = db.Column(db.String(36), default=None)
     name = db.Column(db.Text, default='Widget')
     log_level_debug = db.Column(db.Boolean, default=False)
     font_em_name = db.Column(db.Float, default=1.0)
@@ -30,7 +32,7 @@ class Widget(CRUDMixin, db.Model):
     position_y = db.Column(db.Integer, default=999)
     width = db.Column(db.Integer, default=6)
     height = db.Column(db.Integer, default=6)
-    custom_options = db.Column(db.Text, default='')
+    custom_options = db.Column(db.Text().with_variant(LONGTEXT, "mysql", "mariadb"), default='')
 
     # TODO: next major revision: delete all below, no longer used
     enable_header_buttons = db.Column(db.Boolean, default=True)
@@ -75,7 +77,7 @@ class Widget(CRUDMixin, db.Model):
     enable_output_controls = db.Column(db.Boolean, default=True)  # Show output controls on dashboard element
     show_pid_info = db.Column(db.Boolean, default=True)  # Display detailed information about the PID
     show_set_setpoint = db.Column(db.Boolean, default=True)  # Display set PID setpoint
-    camera_id = db.Column(db.Text, default='')  # store camera ID to display
+    camera_id = db.Column(db.String(36), default='')  # store camera ID to display
     camera_image_type = db.Column(db.Text, default='')  # save new image, overwrite old, display last timelapse
     camera_max_age = db.Column(db.Integer, default=360)  # max camera image age before "No new image" shown
 

@@ -58,19 +58,18 @@ runSelfUpgrade() {
 
   printf "\n#### Beginning pre-upgrade checks ####\n\n"
 
-  # Upgrade requires Python >= 3.6
+  # Upgrade requires Python >= 3.8
   printf "Checking Python version...\n"
   if hash python3 2>/dev/null; then
-    if ! python3 "${CURRENT_MYCODO_DIRECTORY}"/mycodo/scripts/upgrade_check.py --min_python_version "3.6"; then
-      printf "\nIncorrect Python version found. Mycodo requires Python >= 3.6.\n"
-      printf "If you're running Raspbian 9 (Stretch) with Python 3.5, you will need to install at least Raspbian 10 (Buster) with Python 3.7 to upgrade to the latest version of Mycodo.\n"
+    if ! python3 "${CURRENT_MYCODO_DIRECTORY}"/mycodo/scripts/upgrade_check.py --min_python_version "3.8"; then
+      printf "Error: Incorrect Python version found. Mycodo requires Python >= 3.8.\n"
       echo '0' > "${CURRENT_MYCODO_DIRECTORY}"/.upgrade
       exit 1
     else
-      printf "Python >= 3.6 found. Continuing with the upgrade.\n"
+      printf "Python >= 3.8 found. Continuing with the upgrade.\n"
     fi
   else
-    printf "\npython3 was not found. Cannot proceed with the upgrade without python3 (Python >= 3.6).\n"
+    printf "\nError: python3 binary required in PATH to proceed with the upgrade.\n"
     echo '0' > "${CURRENT_MYCODO_DIRECTORY}"/.upgrade
     exit 1
   fi
@@ -111,6 +110,14 @@ runSelfUpgrade() {
     error_found
   fi
   printf "Done.\n"
+
+  if [ -f "${CURRENT_MYCODO_DIRECTORY}"/mycodo/config_override.py ] ; then
+    printf "Copying config_override.py..."
+    if ! cp "${CURRENT_MYCODO_DIRECTORY}"/mycodo/config_override.py "${THIS_MYCODO_DIRECTORY}"/mycodo/ ; then
+      printf "Failed: Error while trying to copy config_override.py."
+    fi
+    printf "Done.\n"
+  fi
 
   printf "Copying flask_secret_key..."
   if ! cp "${CURRENT_MYCODO_DIRECTORY}"/databases/flask_secret_key "${THIS_MYCODO_DIRECTORY}"/databases ; then
@@ -213,6 +220,24 @@ runSelfUpgrade() {
     printf "Copying mycodo/mycodo_flask/static/css/user_css..."
     if ! cp -r "${CURRENT_MYCODO_DIRECTORY}"/mycodo/mycodo_flask/static/css/user_css "${THIS_MYCODO_DIRECTORY}"/mycodo/mycodo_flask/static/css/ ; then
       printf "Failed: Error while trying to copy mycodo/mycodo_flask/static/css/user_css"
+      error_found
+    fi
+    printf "Done.\n"
+  fi
+
+  if [ -d "${CURRENT_MYCODO_DIRECTORY}"/mycodo/mycodo_flask/static/fonts/user_fonts ] ; then
+    printf "Copying mycodo/mycodo_flask/static/fonts/user_fonts..."
+    if ! cp -r "${CURRENT_MYCODO_DIRECTORY}"/mycodo/mycodo_flask/static/fonts/user_fonts "${THIS_MYCODO_DIRECTORY}"/mycodo/mycodo_flask/static/fonts/ ; then
+      printf "Failed: Error while trying to copy mycodo/mycodo_flask/static/fonts/user_fonts"
+      error_found
+    fi
+    printf "Done.\n"
+  fi
+
+  if [ -d "${CURRENT_MYCODO_DIRECTORY}"/mycodo/user_scripts ] ; then
+    printf "Copying mycodo/user_scripts..."
+    if ! cp -r "${CURRENT_MYCODO_DIRECTORY}"/mycodo/user_scripts "${THIS_MYCODO_DIRECTORY}"/mycodo/ ; then
+      printf "Failed: Error while trying to copy mycodo/user_scripts"
       error_found
     fi
     printf "Done.\n"
