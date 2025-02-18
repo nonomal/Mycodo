@@ -37,14 +37,14 @@ fi
 
 printf "Checking Python version...\n"
 if hash python3 2>/dev/null; then
-  if ! python3 "${INSTALL_DIRECTORY}"/mycodo/scripts/upgrade_check.py --min_python_version "3.6"; then
-    printf "Error: Incorrect Python version found. Mycodo requires Python >= 3.6.\n"
+  if ! python3 "${INSTALL_DIRECTORY}"/mycodo/scripts/upgrade_check.py --min_python_version "3.8"; then
+    printf "Error: Incorrect Python version found. Mycodo requires Python >= 3.8.\n"
     exit 1
   else
-    printf "Python >= 3.6 found.\n"
+    printf "Python >= 3.8 found. Continuing with the install.\n"
   fi
 else
-  printf "\nError: correct python version not found. Python >= 3.6 required in PATH to proceed with the install.\n"
+  printf "\nError: python3 binary required in PATH to proceed with the install.\n"
   exit 1
 fi
 
@@ -64,6 +64,11 @@ LICENSE=$(dialog --title "Mycodo Installer: License Agreement" \
                    --yesno "Mycodo is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.\n\nMycodo is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License along with Mycodo. If not, see gnu.org/licenses\n\nDo you agree to the license terms?" \
                    20 68 \
                    3>&1 1>&2 2>&3)
+exitstatus=$?
+if [ $exitstatus != 0 ]; then
+    printf "Mycodo install cancelled by user\n" 2>&1 | tee -a "${LOG_LOCATION}"
+    exit 1
+fi
 
 clear
 LANGUAGE=$(dialog --title "Mycodo Installer" \

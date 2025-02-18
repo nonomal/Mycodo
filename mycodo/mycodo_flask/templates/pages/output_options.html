@@ -11,13 +11,13 @@
 
     <div class="row small-gutters">
       <div class="col-auto">
-        <button type="button" class="form-control btn btn-primary btn-sm btn-block" data-dismiss="modal">{{_('Close')}}</button>
+        <button type="button" class="form-control btn btn-primary btn-block" data-dismiss="modal">{{_('Close')}}</button>
       </div>
       <div class="col-auto">
-        <input onclick="return $(this).processRequest(this, 'output_mod');" name="output_mod" value="{{_('Save')}}" class="form-control btn btn-primary btn-sm btn-block" type="button"/>
+        <input onclick="return $(this).processRequest(this, 'output_mod');" name="output_mod" value="{{_('Save')}}" class="form-control btn btn-primary btn-block" type="button"/>
       </div>
       <div class="col-auto">
-        <input onclick="return confirm('{{_('Are you sure you want to delete this?')}}') && $(this).processRequest(this, 'output_delete');" name="output_delete" value="{{_('Delete')}}" class="form-control btn btn-primary btn-sm btn-block" type="button"/>
+        <input onclick="return confirm('{{_('Are you sure you want to delete this?')}}') && $(this).processRequest(this, 'output_delete');" name="output_delete" value="{{_('Delete')}}" class="form-control btn btn-primary btn-block" type="button"/>
       </div>
     </div>
 
@@ -34,7 +34,9 @@
     {{_("Library")}}:
     {% for each_lib in dict_outputs[each_output.output_type]['dependencies_module'] -%}
       {%- if each_lib[0] == 'pip-pypi' -%}
-        {%- if "==" in each_lib[2] -%}
+        {%- if each_lib[2].startswith("git+") -%}
+      {{each_lib[2]}}
+        {%- elif "==" in each_lib[2] -%}
       <a href="https://pypi.org/project/{{each_lib[2].split('==')[0]}}/{{each_lib[2].split('==')[1]}}" target="_blank">{{each_lib[2].split('==')[0]}}</a>
         {%- else -%}
       <a href="https://pypi.org/project/{{each_lib[2]}}" target="_blank">{{each_lib[2]}}</a>
@@ -89,6 +91,7 @@
     <div class="row small-gutters align-items-end" style="padding: 0.5em">
       <div class="col-12">
         <h5>{{_('Commands')}}</h5>
+        <hr class="entry-break">
       </div>
       {% include 'pages/form_options/Custom_Actions_Message.html' %}
       {% if 'custom_commands' in dict_options %}
@@ -102,6 +105,7 @@
     <div class="row small-gutters" style="padding: 0.5em">
       <div class="col-12">
         <h5>{{_('Options')}}</h5>
+        <hr class="entry-break">
       </div>
 
       <div class="col-auto">
@@ -142,6 +146,7 @@
     <div class="row small-gutters" style="padding: 0.5em">
       <div class="col-12">
         <h5>{{_('Custom Options')}}</h5>
+        <hr class="entry-break">
       </div>
     {% if 'custom_options_message' in dict_options %}
       {% include 'pages/form_options/Custom_Options_Message.html' %}
@@ -166,6 +171,7 @@
     <div class="row small-gutters" style="padding: 1em 0 0 0.5em">
       <div class="col-12">
         <h5>{{_('Channel Options')}}</h5>
+        <hr class="entry-break">
       </div>
     </div>
 

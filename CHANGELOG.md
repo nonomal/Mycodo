@@ -1,4 +1,32 @@
-## 8.16.0 (Unreleased)
+## 8.16.1 (Unreleased)
+
+This release introduces the ability to override MYCODO_DB_PATH, SQLALCHEMY_DATABASE_URI, and ALEMBIC_URL in mycodo/config.py to use an alternate settings database. This is accomplished by creating these variables in mycodo/config_override.py. This new config file will be checked on startup and will persist after upgrades.
+
+### Bugfixes
+
+ - Fix Atlas EC and pH Inputs losing measurements when calibration temperature is None
+ - Fix restoring mycodo/user_scripts during upgrade
+ - Fix documentation generation
+ - Fix theming on selection inputs
+ - Fix minimum Python version for upgrade
+ - Fix generating library hyperlinks when pip uses a git source
+ - Fix directory validation
+ - Add Output: L298N Peristaltic Pump (Pi 5)
+ - Add Input: Raspberry Pi 6-Channel Power Monitor (v0.4.0)
+
+### Features
+
+ - Add ability to use alternate mysql server using config_override.py
+ - Add Output: PWM Raspberry Pi GPIO (RPi.GPIO) (for Pi <= 4, since pigpiod is deprecated)
+
+### Miscellaneous
+
+ - Allow deletion of the last remaining Dashboard
+ - Add custom favicon
+ - Make output state color (yellow/red/green) more prominent
+
+
+## 8.16.0 (2024.09.29)
 
 This release updates several python packages that require Python >= 3.8. You can check your Python version prior to upgrading. If you do not have the required version, you should not upgrade, since this will likely break your system. To be able to use this and future Mycodo releases, ensure you are running an updated operating system that supports a modern Python version.
 
@@ -12,17 +40,34 @@ This release changes the install directory from ~/Mycodo to /opt/Mycodo. This ne
  - Fix influxdb client install if server is already installed
  - Fix Select options of web UI not properly displaying the saved value
  - Fix note attachments not being copied during upgrade
+ - Fix display of values <=0 in PID Widget ([#1372](https://github.com/kizniche/Mycodo/issues/1372))
+ - Fix MCP23017 Pump Output KeyError
+ - Fix displaying Tags on Highcharts Widget
+ - Fix dependencies of Mijia LYWSD03MMC
+ - Fix Restart Frontend returning an error
+ - Fix PWM Outputs not recording values of 0 to database
 
 ### Features
 
+ - Add Action: Measurement (Single, Last, with Timestamp)
+ - Add Input: DHT20
+ - Add Input: MAX31855 CircuitPython
  - Add Output: GPIO On/Off using pinctrl (First Pi 5-compatible Output)
  - Add Output: PWM MQTT Publish
  - Add Output: GP8403 2-Channel DAC (0-10 VDC) ([#1354](https://github.com/kizniche/Mycodo/issues/1354))
+ - Add Output: GP8XXX (8403) 2-Channel DAC (0-10 VDC) ([#1354](https://github.com/kizniche/Mycodo/issues/1354))
+ - Add Output: XL9535 16-Channel On/Off IO-Expander
+ - Add Widget: Measurement (2 Values)
+ - Add ability to set custom layout.html
  - Add API Endpoint: /notes/create to create a Note ([#1357](https://github.com/kizniche/Mycodo/issues/1357))
  - Add ability to switch displaying hostname with custom text
  - Add Step Line Series Type to Graph (Synchronous) Widget
  - Add controller_restart as client endpoint
  - Add option for custom CSS
+ - Add options for changing title and brand text
+ - Add ability to edit Input and Input Measurement unique_id
+ - Add "edge_input" Input option for use in Edge Trigger Functions
+ - Add ability to use custom theme
 
 ### Miscellaneous
 
@@ -30,6 +75,9 @@ This release changes the install directory from ~/Mycodo to /opt/Mycodo. This ne
  - Change Dashboard grid width from 20 to 24
  - Add endpoint option to RAM Input for when Mycodo is using a non-standard IP/port
  - Add self.control to the Python 3 Code Action
+ - Run widget HTML regeneration in thread
+ - Update InfluxDB 2.x to v2.7.8
+ - Update adafruit-circuitpython-ads1x15 to 2.2.25
  - Update Gridstack to 10.0.1
  - Update alembic to 1.13.1
  - Update bcrypt to 1.4.2 

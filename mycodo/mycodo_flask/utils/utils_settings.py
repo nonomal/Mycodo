@@ -27,6 +27,7 @@ from mycodo.config import PATH_ACTIONS_CUSTOM
 from mycodo.config import PATH_FUNCTIONS_CUSTOM
 from mycodo.config import PATH_INPUTS_CUSTOM
 from mycodo.config import PATH_OUTPUTS_CUSTOM
+from mycodo.config import PATH_TEMPLATE_USER
 from mycodo.config import PATH_WIDGETS_CUSTOM
 from mycodo.config import UPGRADE_INIT_FILE
 from mycodo.config_devices_units import MEASUREMENTS
@@ -65,6 +66,7 @@ from mycodo.utils.actions import parse_action_information
 from mycodo.utils.database import db_retrieve_table
 from mycodo.utils.functions import parse_function_information
 from mycodo.utils.inputs import parse_input_information
+from mycodo.utils.layouts import update_layout
 from mycodo.utils.modules import load_module_from_file
 from mycodo.utils.outputs import parse_output_information
 from mycodo.utils.send_data import send_email
@@ -363,6 +365,7 @@ def user_del(form):
 # Settings modifications
 #
 
+
 def settings_general_mod(form):
     """Modify General settings."""
     messages = {
@@ -382,13 +385,31 @@ def settings_general_mod(form):
 
         if not messages["error"]:
             try:
+                reload_frontend = False
                 mod_misc = Misc.query.first()
 
-                force_https = mod_misc.force_https
-                mod_misc.force_https = form.force_https.data
+                if mod_misc.force_https != form.force_https.data:
+                    mod_misc.force_https = form.force_https.data
+                    reload_frontend = True
+
                 mod_misc.rpyc_timeout = form.rpyc_timeout.data
                 mod_misc.custom_css = form.custom_css.data
+
+                if mod_misc.custom_layout != form.custom_layout.data:
+                    mod_misc.custom_layout = form.custom_layout.data
+                    assure_path_exists(PATH_TEMPLATE_USER)
+                    update_layout(mod_misc.custom_layout)
+                    reload_frontend = True
+
+                mod_misc.brand_display = form.brand_display.data
+                mod_misc.title_display = form.title_display.data
                 mod_misc.hostname_override = form.hostname_override.data
+                if form.brand_image.data:
+                    mod_misc.brand_image = form.brand_image.data.read()
+                mod_misc.brand_image_height = form.brand_image_height.data
+                mod_misc.favicon_display = form.favicon_display.data
+                if form.brand_favicon.data:
+                    mod_misc.brand_favicon = form.brand_favicon.data.read()
                 mod_misc.daemon_debug_mode = form.daemon_debug_mode.data
                 mod_misc.hide_alert_success = form.hide_success.data
                 mod_misc.hide_alert_info = form.hide_info.data
@@ -447,11 +468,10 @@ def settings_general_mod(form):
                     action=TRANSLATIONS['modify']['title'],
                     controller=gettext("General Settings")))
 
-                if force_https != form.force_https.data:
-                    # Force HTTPS option changed.
-                    # Reload web server with new settings.
-                    cmd = '{path}/mycodo/scripts/mycodo_wrapper frontend_reload 2>&1'.format(
-                        path=INSTALL_DIRECTORY)
+                if reload_frontend:
+                    # Reload web server
+                    logger.info("Reloading frontend in 10 seconds")
+                    cmd = f"sleep 10 && {INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper frontend_reload 2>&1"
                     subprocess.Popen(cmd, shell=True)
 
             except Exception as except_msg:
@@ -1612,69 +1632,60 @@ def settings_pi_mod(form):
         action_str = "Change Hostname to '{host}'".format(
             host=form.hostname.data)
     elif form.change_pigpiod_sample_rate.data:
-        if form.pigpiod_sample_rate.data not in ['low', 'high',
-                                                 'disabled', 'uninstalled']:
+        if form.pigpiod_sample_rate.data not in ['low', 'high', 'disabled', 'uninstalled']:
             error.append(
                 "Valid pigpiod options: Uninstall, Disable, 1 ms, or 5 ms. "
                 "Invalid option: {op}".format(
                     op=form.pigpiod_sample_rate.data))
         else:
             # Stop the Mycodo daemon
-            cmd = "{pth}/mycodo/scripts/mycodo_wrapper daemon_stop" \
-                  " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                pth=INSTALL_DIRECTORY)
+            cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper daemon_stop" \
+                  f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
             stop_daemon = subprocess.Popen(cmd, shell=True)
             stop_daemon.wait()
 
             if (form.pigpiod_sample_rate.data != 'uninstalled' and
                     form.pigpiod_state.data == 'uninstalled'):
                 # Install pigpiod (sample rate of 1 ms)
-                cmd = "{pth}/mycodo/scripts/mycodo_wrapper install_pigpiod" \
-                      " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                    pth=INSTALL_DIRECTORY)
+                cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper install_pigpiod" \
+                      f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
                 install_pigpiod = subprocess.Popen(cmd, shell=True)
                 install_pigpiod.wait()
 
             # Disable pigpiod
-            cmd = "{pth}/mycodo/scripts/mycodo_wrapper disable_pigpiod" \
-                  " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                pth=INSTALL_DIRECTORY)
+            cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper disable_pigpiod" \
+                  f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
             disable_pigpiod = subprocess.Popen(cmd, shell=True)
             disable_pigpiod.wait()
 
             if form.pigpiod_sample_rate.data == 'low':
                 # Install pigpiod (sample rate of 1 ms)
-                cmd = "{pth}/mycodo/scripts/mycodo_wrapper enable_pigpiod_low" \
-                      " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                    pth=INSTALL_DIRECTORY)
+                cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper enable_pigpiod_low" \
+                      f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
                 enable_pigpiod_1ms = subprocess.Popen(cmd, shell=True)
                 enable_pigpiod_1ms.wait()
             elif form.pigpiod_sample_rate.data == 'high':
                 # Install pigpiod (sample rate of 5 ms)
-                cmd = "{pth}/mycodo/scripts/mycodo_wrapper enable_pigpiod_high" \
-                      " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                    pth=INSTALL_DIRECTORY)
+                cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper enable_pigpiod_high" \
+                      f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
                 enable_pigpiod_5ms = subprocess.Popen(cmd, shell=True)
                 enable_pigpiod_5ms.wait()
             elif form.pigpiod_sample_rate.data == 'disabled':
                 # Disable pigpiod (user selected disable)
-                cmd = "{pth}/mycodo/scripts/mycodo_wrapper enable_pigpiod_disabled" \
-                      " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                    pth=INSTALL_DIRECTORY)
+                cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper enable_pigpiod_disabled" \
+                      f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
                 disable_pigpiod = subprocess.Popen(cmd, shell=True)
                 disable_pigpiod.wait()
             elif form.pigpiod_sample_rate.data == 'uninstalled':
                 # Uninstall pigpiod (user selected disable)
-                cmd = "{pth}/mycodo/scripts/mycodo_wrapper uninstall_pigpiod" \
-                      " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                    pth=INSTALL_DIRECTORY)
+                cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper uninstall_pigpiod" \
+                      f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
                 uninstall_pigpiod = subprocess.Popen(cmd, shell=True)
                 uninstall_pigpiod.wait()
 
             # Start the Mycodo daemon
-            cmd = "{pth}/mycodo/scripts/mycodo_wrapper daemon_start" \
-                  " | ts '[%Y-%m-%d %H:%M:%S]' 2>&1".format(
-                pth=INSTALL_DIRECTORY)
+            cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper daemon_start" \
+                  f" | ts '[%Y-%m-%d %H:%M:%S]' 2>&1"
             start_daemon = subprocess.Popen(cmd, shell=True)
             start_daemon.wait()
 
@@ -1988,25 +1999,20 @@ def settings_diagnostic_install_dependencies():
 
 
 def settings_regenerate_widget_html():
-    action = gettext("Regenerate Widget HTML")
-    error = []
+    try:
+        time.sleep(2)
 
-    if not error:
-        try:
-            command = f'/bin/bash {INSTALL_DIRECTORY}/mycodo/scripts/upgrade_commands.sh generate-widget-html'
-            p = subprocess.Popen(command, shell=True)
-            p.communicate()
+        cmd = f'/bin/bash {INSTALL_DIRECTORY}/mycodo/scripts/upgrade_commands.sh generate-widget-html'
+        out, err, status = cmd_output(cmd, stdout_pipe=False, user='root')
+        logger.info(
+            "Regenerate Widget HTML: "
+            f"cmd: {cmd}; out: {out}; error: {err}; status: {status}")
 
-            cmd = f"{INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper frontend_reload" \
-                  f" | ts '[%Y-%m-%d %H:%M:%S]' >> {DEPENDENCY_LOG_FILE} 2>&1"
-            p = subprocess.Popen(cmd, shell=True)
-            p.communicate()
-        except Exception as except_msg:
-            error.append(except_msg)
-
-    flash("Widget HTML Regeneration complete.", "success")
-    flash_success_errors(
-        error, action, url_for('routes_settings.settings_diagnostic'))
+        logger.info("Reloading frontend in 10 seconds")
+        cmd = f"sleep 10 && {INSTALL_DIRECTORY}/mycodo/scripts/mycodo_wrapper frontend_reload 2>&1"
+        subprocess.Popen(cmd, shell=True)
+    except Exception:
+        logger.exception("Regenerating widget HTML")
 
 
 def settings_diagnostic_upgrade_master():
@@ -2038,7 +2044,7 @@ def settings_diagnostic_upgrade_master():
                 error, action, url_for('routes_settings.settings_diagnostic'))
             return
         finally:
-            command = '/bin/bash {path}/mycodo/scripts/upgrade_commands.sh web-server-reload'.format(
+            command = '/bin/bash {path}/mycodo/scripts/upgrade_commands.sh web-server-restart'.format(
                 path=INSTALL_DIRECTORY)
             subprocess.Popen(command, shell=True)
 
